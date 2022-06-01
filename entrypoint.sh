@@ -40,15 +40,16 @@ if ! flyctl status --app "$app"; then
   if [ -n "$INPUT_SECRETS" ]; then
     echo $INPUT_SECRETS | tr " " "\n" | flyctl secrets import --app "$app"
   fi
-  flyctl deploy --app "$app" --region "$region" --image "$image" --region "$region" --strategy immediate
-elif [ "$INPUT_UPDATE" != "false" ]; then
-  flyctl deploy --app "$app" --region "$region" --image "$image" --region "$region" --strategy immediate
 fi
 
 # Attach postgres cluster to the app if specified.
+# Do this before deploying the app in case the deploy depends upon a database (e.g. running migrations)
 if [ -n "$INPUT_POSTGRES" ]; then
   flyctl postgres attach --postgres-app "$INPUT_POSTGRES" || true
 fi
+
+# Now deploy the app.
+flyctl deploy --app "$app" --region "$region" --image "$image" --region "$region" --strategy immediate
 
 # Make some info available to the GitHub workflow.
 fly status --app "$app" --json >status.json
