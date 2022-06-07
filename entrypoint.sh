@@ -45,7 +45,11 @@ fi
 # Attach postgres cluster to the app if specified.
 # Do this before deploying the app in case the deploy depends upon a database (e.g. running migrations)
 if [ -n "$INPUT_POSTGRES" ]; then
-  flyctl postgres attach --app "$app" --postgres-app "$INPUT_POSTGRES" -y || true
+  # flyctl doesn't currently support non-interactive invocation of postgres attach. Copy the fly.toml,
+  # updating the app name to match the one we are operating on, so that the command doesnt' prompt
+  # for confirmation.
+  sed -r -e 's/app[[:space:]]?=[[:space:]]?"[[:print:]]+"/app = "'$app'"/' fly.toml > fly.$app.toml
+  flyctl postgres attach --app "$app" --postgres-app "$INPUT_POSTGRES" --config fly.$app.toml || true
 fi
 
 # Now deploy the app.
